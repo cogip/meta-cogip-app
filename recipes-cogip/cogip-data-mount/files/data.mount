@@ -1,0 +1,13 @@
+[Unit]
+Description=Cogip persistent data partition
+# Created by wic with label "data". Holds the Docker data-root, the
+# on-device source for VSCode editing, and runtime records.
+
+[Mount]
+What=/dev/disk/by-label/data
+Where=/data
+Type=ext4
+Options=defaults,noatime
+
+[Install]
+WantedBy=local-fs.target

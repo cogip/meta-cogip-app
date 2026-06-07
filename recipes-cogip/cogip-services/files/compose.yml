@@ -1,0 +1,92 @@
+# Cogip production compose -- one service per tool, driven by systemd
+# (cogip@.service) which owns restart/ordering. Derived from the repo
+# docker-compose.yml but stripped of dev concerns (build, watch, X11,
+# vcan). The image is the pre-loaded cogip/cogip-tools:console.
+#
+# systemd starts each service with `docker compose up --no-deps <svc>`,
+# so restart policy is "no" here (systemd restarts), and ordering is
+# expressed via systemd drop-ins, not compose depends_on.
+
+x-common: &common
+  image: cogip/cogip-tools:console
+  network_mode: host          # CAN (socketcan can0) + inter-tool localhost
+  ipc: host                   # shared-memory (cogip.cpp shared_memory)
+  restart: "no"               # systemd owns restart/retry
+  env_file: /etc/cogip/environment
+  working_dir: /src
+  volumes:
+    - /run/cogip:/var/run/cogip
+    - /data/vscode-server:/root/.vscode-server   # persist VSCode server
+
+# Serial / I2C / GPIO peripherals (servos, OLED, lidar UART, MCU UART).
+x-hw: &hw
+  devices:
+    - /dev/ttyUSB0
+    - /dev/ttyAMA2
+    - /dev/i2c-1
+    - /dev/gpiochip0
+  group_add:
+    - dialout
+    - i2c
+    - gpio
+
+# Camera (libcamera/picamera2). dma_heap major is dynamic, so allow the
+# heap + v4l class via cgroup rules in addition to the static nodes.
+x-camera: &camera
+  devices:
+    - /dev/video0
+    - /dev/media0
+  group_add:
+    - video
+  device_cgroup_rules:
+    - 'c 81:* rmw'    # Video4Linux
+    - 'c 245:* rmw'   # dma_heap (verify major on target, adjust if needed)
+
+services:
+  # ---- beacon role ----
+  server-beacon:
+    <<: *common
+    command: ["uv", "run", "--no-sync", "cogip-server-beacon"]
+    profiles: ["beacon"]
+
+  beaconcam:
+    <<: [*common, *camera]
+    command: ["uv", "run", "--no-sync", "cogip-beaconcam"]
+    profiles: ["beacon"]
+
+  # ---- robot role ----
+  server:
+    <<: *common
+    command: ["uv", "run", "--no-sync", "cogip-server"]
+    profiles: ["robot"]
+
+  planner:
+    <<: [*common, *hw]
+    command: ["uv", "run", "--no-sync", "cogip-planner"]
+    profiles: ["robot"]
+
+  copilot:
+    <<: *common
+    command: ["uv", "run", "--no-sync", "cogip-copilot"]
+    profiles: ["robot"]
+
+  detector:
+    <<: [*common, *hw]
+    command: ["uv", "run", "--no-sync", "cogip-detector"]
+    profiles: ["robot"]
+
+  mcu-logger:
+    <<: [*common, *hw]
+    command: ["uv", "run", "--no-sync", "cogip-mcu-logger"]
+    profiles: ["robot"]
+
+  robotcam:
+    <<: [*common, *camera]
+    command: ["uv", "run", "--no-sync", "cogip-robotcam"]
+    profiles: ["robot"]
+
+  # ---- both roles ----
+  dashboard:
+    <<: *common
+    command: ["uv", "run", "--no-sync", "cogip-dashboard"]
+    profiles: ["beacon", "robot"]

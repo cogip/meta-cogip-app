@@ -1,0 +1,20 @@
+[Unit]
+Description=Cogip tool %i (containerized)
+# The image must be loaded and the data partition mounted first.
+Requires=docker.service cogip-app-load.service
+After=docker.service cogip-app-load.service network-online.target
+Wants=network-online.target
+PartOf=cogip.target
+
+[Service]
+# Foreground `up` so systemd sees the container exit and restarts it.
+# Type=simple (not notify): sd_notify does not cross the container.
+Type=simple
+EnvironmentFile=/etc/cogip/environment
+ExecStart=/usr/bin/docker compose -f /etc/cogip/compose.yml up --no-deps %i
+ExecStop=/usr/bin/docker compose -f /etc/cogip/compose.yml stop %i
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=cogip.target

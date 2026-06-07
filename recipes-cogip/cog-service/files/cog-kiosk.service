@@ -1,0 +1,27 @@
+[Unit]
+Description=Cog WPE WebKit kiosk
+Documentation=https://github.com/Igalia/cog
+After=systemd-user-sessions.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cog-kiosk
+Restart=always
+RestartSec=1
+
+# Run as root for now (Pi 4 kiosk, no multi-user). Tighten to a
+# dedicated `kiosk` user once the unit is stable.
+User=root
+
+# DRM/KMS direct: no logind seat required because cage opens
+# /dev/dri/card0 directly.
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+
+[Install]
+WantedBy=multi-user.target

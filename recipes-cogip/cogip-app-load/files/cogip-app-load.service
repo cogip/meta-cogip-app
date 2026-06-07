@@ -1,0 +1,15 @@
+[Unit]
+Description=Load the pre-shipped Cogip Docker image into the local store
+Requires=docker.service data.mount
+After=docker.service data.mount
+# The cogip@ tool services consume the loaded image, so they must wait
+# for this oneshot to finish.
+Before=cogip.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/cogip-app-load
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,8 @@
+[Unit]
+Description=Cogip application stack
+Requires=cogip-app-load.service
+After=cogip-app-load.service
+Wants=cog-kiosk.service
+
+[Install]
+WantedBy=multi-user.target
