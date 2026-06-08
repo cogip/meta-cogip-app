@@ -1,3 +1,0 @@
-# pre-built container image tarball (produced by `make app-image` in the
-# yocto-build repo, ~1 GB) -- never committed
-/files-prebuilt/
