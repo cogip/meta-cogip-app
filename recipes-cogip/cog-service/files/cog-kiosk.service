@@ -1,8 +1,10 @@
 [Unit]
 Description=Cog WPE WebKit kiosk
 Documentation=https://github.com/Igalia/cog
-After=systemd-user-sessions.service network-online.target
-Wants=network-online.target
+# The kiosk shows a local URL (localhost), so it must NOT wait for
+# network-online -- that would stall the display by the networkd
+# wait-online timeout when no link is up.
+After=systemd-user-sessions.service
 
 [Service]
 Type=simple
@@ -14,8 +16,8 @@ RestartSec=1
 # dedicated `kiosk` user once the unit is stable.
 User=root
 
-# DRM/KMS direct: no logind seat required because cage opens
-# /dev/dri/card0 directly.
+# DRM/KMS direct: Cog opens /dev/dri/card0 itself (no compositor, no
+# logind seat). Own tty1 so it is the foreground VT / DRM master.
 StandardInput=tty
 StandardOutput=journal
 StandardError=journal

@@ -14,8 +14,13 @@ WKS_FILE = "cogip-sdimage.wks"
 # is included for field debugging; drop it once the unit is stable.
 # package-management deliberately left out: the kiosk image is immutable,
 # upgrades happen by reflashing.
+#
+# debug-tweaks: empty root password so you can log in on the serial
+# console / an HDMI VT (Ctrl+Alt+F2) / over SSH to debug. REMOVE for
+# production -- it allows passwordless root login.
 IMAGE_FEATURES += " \
     ssh-server-openssh \
+    debug-tweaks \
 "
 
 # Cog runs in its DRM platform (see meta-cogip/.../cog_%.bbappend) so
