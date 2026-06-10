@@ -44,11 +44,15 @@ IMAGE_INSTALL += " \
     systemd \
 "
 
-# Docker runtime + the Cogip containerized application stack. The
-# pre-loaded image tarball (cogip-app-image) and its first-boot loader
-# (cogip-app-load) are always included; the tarball must be staged by
-# `make app-image` first (the Makefile build target enforces this).
-IMAGE_INSTALL += " \
+# Docker runtime + the Cogip containerized application stack. Gated on
+# COGIP_APP (default 1): set COGIP_APP=0 to build a bare kiosk image
+# (Cog + networking only, no Docker, no cogip-tools container, no app
+# tarball needed) -- handy for isolating Wi-Fi / display bring-up.
+# The pre-loaded image tarball (cogip-app-image) is staged by
+# `make app-image` first (the Makefile build target enforces this when
+# COGIP_APP=1).
+COGIP_APP ??= "1"
+IMAGE_INSTALL += "${@bb.utils.contains_any('COGIP_APP', '1 yes true', ' \
     docker-moby \
     docker-compose \
     cogip-data-mount \
@@ -56,7 +60,7 @@ IMAGE_INSTALL += " \
     cogip-services \
     cogip-app-image \
     cogip-app-load \
-"
+', '', d)}"
 
 # Strip development tooling: kernel-dev, gdb, etc. Image is reflashed,
 # not patched on-target.
