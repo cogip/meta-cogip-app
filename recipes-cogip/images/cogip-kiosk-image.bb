@@ -29,6 +29,8 @@ IMAGE_FEATURES += " \
 IMAGE_INSTALL += " \
     kernel-modules \
     linux-firmware-rpidistro-bcm43455 \
+    wireless-regdb-static \
+    rfkill \
     cog \
     wpewebkit \
     mesa \
