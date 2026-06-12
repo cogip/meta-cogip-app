@@ -9,6 +9,11 @@ Before=cogip.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
+# First boot does heavy IO on the SD card: docker-load the ~3 GB image
+# and copy out the ~1 GB venv. That can take several minutes, so never
+# let the default start timeout kill it mid-load (a partial load just
+# gets retried next boot, but that wastes the work).
+TimeoutStartSec=0
 ExecStart=/usr/bin/cogip-app-load
 
 [Install]
