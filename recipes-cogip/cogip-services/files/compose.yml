@@ -3,6 +3,12 @@
 # docker-compose.yml but stripped of dev concerns (build, watch, X11,
 # vcan). The image is the pre-loaded cogip/cogip-tools:console.
 #
+# The COGIP tools live in /opt/.venv (wheel install in the image),
+# seeded onto the rootfs at first boot and bind-mounted in, so the
+# sources under /opt/.venv/lib/pythonX.Y/site-packages/cogip are editable
+# on the board (raspios-style). Each tool is the venv console script
+# /opt/.venv/bin/cogip-* run directly (no `uv run`).
+#
 # systemd starts each service with `docker compose up --no-deps <svc>`,
 # so restart policy is "no" here (systemd restarts), and ordering is
 # expressed via systemd drop-ins, not compose depends_on.
@@ -15,6 +21,7 @@ x-common: &common
   env_file: /etc/cogip/environment
   working_dir: /src
   volumes:
+    - /opt/.venv:/opt/.venv     # editable COGIP tools, persisted on rootfs
     - /run/cogip:/var/run/cogip
     - /data/vscode-server:/root/.vscode-server   # persist VSCode server
 
@@ -46,47 +53,47 @@ services:
   # ---- beacon role ----
   server-beacon:
     <<: *common
-    command: ["uv", "run", "--no-sync", "cogip-server-beacon"]
+    command: ["/opt/.venv/bin/cogip-server-beacon"]
     profiles: ["beacon"]
 
   beaconcam:
     <<: [*common, *camera]
-    command: ["uv", "run", "--no-sync", "cogip-beaconcam"]
+    command: ["/opt/.venv/bin/cogip-beaconcam"]
     profiles: ["beacon"]
 
   # ---- robot role ----
   server:
     <<: *common
-    command: ["uv", "run", "--no-sync", "cogip-server"]
+    command: ["/opt/.venv/bin/cogip-server"]
     profiles: ["robot"]
 
   planner:
     <<: [*common, *hw]
-    command: ["uv", "run", "--no-sync", "cogip-planner"]
+    command: ["/opt/.venv/bin/cogip-planner"]
     profiles: ["robot"]
 
   copilot:
     <<: *common
-    command: ["uv", "run", "--no-sync", "cogip-copilot"]
+    command: ["/opt/.venv/bin/cogip-copilot"]
     profiles: ["robot"]
 
   detector:
     <<: [*common, *hw]
-    command: ["uv", "run", "--no-sync", "cogip-detector"]
+    command: ["/opt/.venv/bin/cogip-detector"]
     profiles: ["robot"]
 
   mcu-logger:
     <<: [*common, *hw]
-    command: ["uv", "run", "--no-sync", "cogip-mcu-logger"]
+    command: ["/opt/.venv/bin/cogip-mcu-logger"]
     profiles: ["robot"]
 
   robotcam:
     <<: [*common, *camera]
-    command: ["uv", "run", "--no-sync", "cogip-robotcam"]
+    command: ["/opt/.venv/bin/cogip-robotcam"]
     profiles: ["robot"]
 
   # ---- both roles ----
   dashboard:
     <<: *common
-    command: ["uv", "run", "--no-sync", "cogip-dashboard"]
+    command: ["/opt/.venv/bin/cogip-dashboard"]
     profiles: ["beacon", "robot"]

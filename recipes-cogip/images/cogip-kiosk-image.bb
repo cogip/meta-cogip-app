@@ -66,9 +66,10 @@ IMAGE_INSTALL += "${@bb.utils.contains_any('COGIP_APP', '1 yes true', ' \
 # not patched on-target.
 IMAGE_LINGUAS = "en-us"
 
-# Disk size: rootfs stays lean (system + the embedded container image
-# tarball ~1 GB). The loaded docker graph and mutable data live on the
-# separate /data partition, not here. The container tar dominates, so
-# allow ~1.5 GB of extra space on top of the base rootfs.
+# Disk size: the rootfs holds the embedded container image tarball
+# (~1 GB) AND, at first boot, the seeded editable venv /opt/.venv
+# (cogip-app-load docker-cp's it out of the image, ~1 GB). The loaded
+# docker graph and mutable data live on the separate /data partition.
+# Reserve enough free space for both the tar and the runtime venv seed.
 IMAGE_ROOTFS_SIZE       = "524288"
-IMAGE_ROOTFS_EXTRA_SPACE = "1572864"
+IMAGE_ROOTFS_EXTRA_SPACE = "3145728"
