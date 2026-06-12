@@ -17,7 +17,7 @@ SRC_URI = " \
     file://cogip-tmpfiles.conf \
 "
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 # Note: the relationship to cogip-app-load is a systemd runtime ordering
 # (Requires= in cogip@.service), NOT a packaging dependency. The image
@@ -46,7 +46,7 @@ do_install[vardeps] += "ROBOT_ID"
 do_install() {
     # Config + compose
     install -d ${D}${sysconfdir}/cogip
-    install -m 0644 ${WORKDIR}/compose.yml ${D}${sysconfdir}/cogip/compose.yml
+    install -m 0644 ${UNPACKDIR}/compose.yml ${D}${sysconfdir}/cogip/compose.yml
 
     if [ "${ROBOT_ID}" = "0" ]; then
         role="beacon"
@@ -57,42 +57,42 @@ do_install() {
     fi
     sed -e "s/@ROBOT_ID@/${ROBOT_ID}/g" \
         -e "s/@COMPOSE_PROFILES@/${role}/g" \
-        ${WORKDIR}/environment > ${D}${sysconfdir}/cogip/environment
+        ${UNPACKDIR}/environment > ${D}${sysconfdir}/cogip/environment
     chmod 0644 ${D}${sysconfdir}/cogip/environment
 
     # Units
     install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/cogip@.service ${D}${systemd_system_unitdir}/cogip@.service
-    install -m 0644 ${WORKDIR}/cogip.target  ${D}${systemd_system_unitdir}/cogip.target
+    install -m 0644 ${UNPACKDIR}/cogip@.service ${D}${systemd_system_unitdir}/cogip@.service
+    install -m 0644 ${UNPACKDIR}/cogip.target  ${D}${systemd_system_unitdir}/cogip.target
 
     # Clear stale shared memory before the active server starts.
     install -d ${D}${systemd_system_unitdir}/cogip@${server}.service.d
-    install -m 0644 ${WORKDIR}/dropins/shm-cleanup.conf \
+    install -m 0644 ${UNPACKDIR}/dropins/shm-cleanup.conf \
         ${D}${systemd_system_unitdir}/cogip@${server}.service.d/shm-cleanup.conf
 
     # Dashboard follows the active server.
     install -d ${D}${systemd_system_unitdir}/cogip@dashboard.service.d
     if [ "${ROBOT_ID}" = "0" ]; then
-        install -m 0644 ${WORKDIR}/dropins/bind-server-beacon.conf \
+        install -m 0644 ${UNPACKDIR}/dropins/bind-server-beacon.conf \
             ${D}${systemd_system_unitdir}/cogip@dashboard.service.d/bind.conf
         # beaconcam follows server-beacon
         install -d ${D}${systemd_system_unitdir}/cogip@beaconcam.service.d
-        install -m 0644 ${WORKDIR}/dropins/bind-server-beacon.conf \
+        install -m 0644 ${UNPACKDIR}/dropins/bind-server-beacon.conf \
             ${D}${systemd_system_unitdir}/cogip@beaconcam.service.d/bind.conf
     else
-        install -m 0644 ${WORKDIR}/dropins/bind-server.conf \
+        install -m 0644 ${UNPACKDIR}/dropins/bind-server.conf \
             ${D}${systemd_system_unitdir}/cogip@dashboard.service.d/bind.conf
         # robot tools follow server
         for t in planner copilot detector mcu-logger robotcam; do
             install -d ${D}${systemd_system_unitdir}/cogip@$t.service.d
-            install -m 0644 ${WORKDIR}/dropins/bind-server.conf \
+            install -m 0644 ${UNPACKDIR}/dropins/bind-server.conf \
                 ${D}${systemd_system_unitdir}/cogip@$t.service.d/bind.conf
         done
     fi
 
     # Shared socket dir (/run is tmpfs): created at boot by tmpfiles.d.
     install -d ${D}${sysconfdir}/tmpfiles.d
-    install -m 0644 ${WORKDIR}/cogip-tmpfiles.conf \
+    install -m 0644 ${UNPACKDIR}/cogip-tmpfiles.conf \
         ${D}${sysconfdir}/tmpfiles.d/cogip.conf
 }
 

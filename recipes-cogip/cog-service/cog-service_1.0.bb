@@ -9,7 +9,7 @@ SRC_URI = " \
     file://cog-kiosk.sh \
 "
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 RDEPENDS:${PN} = "cog wpewebkit"
 
@@ -23,11 +23,11 @@ SYSTEMD_AUTO_ENABLE  = "enable"
 
 do_install() {
     install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/cog-kiosk.service \
+    install -m 0644 ${UNPACKDIR}/cog-kiosk.service \
                     ${D}${systemd_system_unitdir}/cog-kiosk.service
 
     install -d ${D}${bindir}
-    install -m 0755 ${WORKDIR}/cog-kiosk.sh \
+    install -m 0755 ${UNPACKDIR}/cog-kiosk.sh \
                     ${D}${bindir}/cog-kiosk
 
     # Bake the kiosk URL into the launcher so the unit stays simple

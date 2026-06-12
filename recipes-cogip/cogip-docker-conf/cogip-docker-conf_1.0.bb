@@ -9,7 +9,7 @@ SRC_URI = " \
     file://data-mount.conf \
 "
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 RDEPENDS:${PN} = "docker-moby"
 
@@ -17,12 +17,12 @@ inherit allarch
 
 do_install() {
     install -d ${D}${sysconfdir}/docker
-    install -m 0644 ${WORKDIR}/daemon.json \
+    install -m 0644 ${UNPACKDIR}/daemon.json \
                     ${D}${sysconfdir}/docker/daemon.json
 
     # Drop-in ordering docker.service after the data partition mount.
     install -d ${D}${systemd_system_unitdir}/docker.service.d
-    install -m 0644 ${WORKDIR}/data-mount.conf \
+    install -m 0644 ${UNPACKDIR}/data-mount.conf \
                     ${D}${systemd_system_unitdir}/docker.service.d/data-mount.conf
 }
 

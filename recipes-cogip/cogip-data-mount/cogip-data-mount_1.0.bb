@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 SRC_URI = "file://data.mount"
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 RDEPENDS:${PN} = "systemd"
 
@@ -17,7 +17,7 @@ SYSTEMD_AUTO_ENABLE  = "enable"
 
 do_install() {
     install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/data.mount \
+    install -m 0644 ${UNPACKDIR}/data.mount \
                     ${D}${systemd_system_unitdir}/data.mount
 
     # Mount point.

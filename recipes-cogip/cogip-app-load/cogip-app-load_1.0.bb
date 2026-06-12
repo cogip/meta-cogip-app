@@ -12,7 +12,7 @@ SRC_URI = " \
     file://cogip-app-load.service \
 "
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 RDEPENDS:${PN} = "docker-moby zstd coreutils cogip-app-image"
 
@@ -23,11 +23,11 @@ SYSTEMD_AUTO_ENABLE  = "enable"
 
 do_install() {
     install -d ${D}${bindir}
-    install -m 0755 ${WORKDIR}/cogip-app-load.sh ${D}${bindir}/cogip-app-load
-    install -m 0755 ${WORKDIR}/cogip-app-update.sh ${D}${bindir}/cogip-app-update
+    install -m 0755 ${UNPACKDIR}/cogip-app-load.sh ${D}${bindir}/cogip-app-load
+    install -m 0755 ${UNPACKDIR}/cogip-app-update.sh ${D}${bindir}/cogip-app-update
 
     install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/cogip-app-load.service \
+    install -m 0644 ${UNPACKDIR}/cogip-app-load.service \
                     ${D}${systemd_system_unitdir}/cogip-app-load.service
 }
 

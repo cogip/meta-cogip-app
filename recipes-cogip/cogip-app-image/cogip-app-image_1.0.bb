@@ -18,13 +18,13 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 FILESEXTRAPATHS:prepend := "${DL_DIR}:"
 SRC_URI = "file://cogip-app.image.tar.zst;unpack=0"
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 inherit allarch
 
 do_install() {
     install -d ${D}/opt/cogip
-    src="${WORKDIR}/cogip-app.image.tar.zst"
+    src="${UNPACKDIR}/cogip-app.image.tar.zst"
     [ -f "$src" ] || src="${DL_DIR}/cogip-app.image.tar.zst"
     install -m 0644 "$src" ${D}/opt/cogip/cogip-app.image.tar.zst
 }
