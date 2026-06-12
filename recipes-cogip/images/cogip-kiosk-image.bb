@@ -15,12 +15,15 @@ WKS_FILE = "cogip-sdimage.wks"
 # package-management deliberately left out: the kiosk image is immutable,
 # upgrades happen by reflashing.
 #
-# debug-tweaks: empty root password so you can log in on the serial
-# console / an HDMI VT (Ctrl+Alt+F2) / over SSH to debug. REMOVE for
-# production -- it allows passwordless root login.
+# Passwordless root login for field debugging (serial / HDMI VT / SSH).
+# On wrynose the `debug-tweaks` bundle is gone -- use its granular
+# replacements. REMOVE these for production.
 IMAGE_FEATURES += " \
     ssh-server-openssh \
-    debug-tweaks \
+    allow-empty-password \
+    allow-root-login \
+    empty-root-password \
+    post-install-logging \
 "
 
 # Cog runs in its DRM platform (see meta-cogip/.../cog_%.bbappend) so

@@ -15,8 +15,15 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 # tracks the file's CONTENT, so a freshly built tarball is rebuilt into
 # the image automatically. unpack=0: ship the .tar.zst whole (docker-load
 # happens at first boot), don't let bitbake auto-extract it.
+#
+# Only fetch the tarball when the Docker app stack is wanted (COGIP_APP).
+# Gating on COGIP_APP (a real bitbake var, so parse re-runs when it
+# changes) keeps a COGIP_APP=0 build -- or a cleaned DL_DIR -- parsing
+# even when no tarball is staged. The Makefile enforces the tarball's
+# presence for COGIP_APP=1.
 FILESEXTRAPATHS:prepend := "${DL_DIR}:"
-SRC_URI = "file://cogip-app.image.tar.zst;unpack=0"
+COGIP_APP ??= "1"
+SRC_URI = "${@'file://cogip-app.image.tar.zst;unpack=0' if d.getVar('COGIP_APP') in ('1', 'yes', 'true') else ''}"
 
 S = "${UNPACKDIR}"
 
@@ -26,7 +33,8 @@ do_install() {
     install -d ${D}/opt/cogip
     src="${UNPACKDIR}/cogip-app.image.tar.zst"
     [ -f "$src" ] || src="${DL_DIR}/cogip-app.image.tar.zst"
-    install -m 0644 "$src" ${D}/opt/cogip/cogip-app.image.tar.zst
+    [ -f "$src" ] && install -m 0644 "$src" ${D}/opt/cogip/cogip-app.image.tar.zst
+    true
 }
 
 FILES:${PN} = "/opt/cogip/cogip-app.image.tar.zst"
