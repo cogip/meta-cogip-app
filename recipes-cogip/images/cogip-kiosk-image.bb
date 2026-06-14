@@ -60,6 +60,7 @@ IMAGE_INSTALL += "${@bb.utils.contains_any('COGIP_APP', '1 yes true', ' \
     docker-compose \
     cogip-data-mount \
     cogip-docker-conf \
+    cogip-environment \
     cogip-services \
     cogip-app-image \
     cogip-app-load \

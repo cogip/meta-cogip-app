@@ -8,7 +8,6 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 
 SRC_URI = " \
     file://compose.yml \
-    file://environment \
     file://cogip@.service \
     file://cogip.target \
     file://dropins/bind-server.conf \
@@ -24,7 +23,10 @@ S = "${UNPACKDIR}"
 # recipe installs cogip-app-image / cogip-app-load only when the tarball
 # is staged; pulling them via RDEPENDS here would make the build fail
 # whenever the (conditional) cogip-app-image package is empty/absent.
-RDEPENDS:${PN} = "docker-moby docker-compose"
+# The units read /etc/environment (EnvironmentFile / compose env_file) for
+# COMPOSE_PROFILES + the per-role config; that file is owned by
+# cogip-environment.
+RDEPENDS:${PN} = "docker-moby docker-compose cogip-environment"
 
 inherit systemd allarch
 
@@ -48,17 +50,13 @@ do_install() {
     install -d ${D}${sysconfdir}/cogip
     install -m 0644 ${UNPACKDIR}/compose.yml ${D}${sysconfdir}/cogip/compose.yml
 
+    # The active server's instance name depends on the role; the role env
+    # itself (/etc/environment) is produced by the cogip-environment recipe.
     if [ "${ROBOT_ID}" = "0" ]; then
-        role="beacon"
         server="server-beacon"
     else
-        role="robot"
         server="server"
     fi
-    sed -e "s/@ROBOT_ID@/${ROBOT_ID}/g" \
-        -e "s/@COMPOSE_PROFILES@/${role}/g" \
-        ${UNPACKDIR}/environment > ${D}${sysconfdir}/cogip/environment
-    chmod 0644 ${D}${sysconfdir}/cogip/environment
 
     # Units
     install -d ${D}${systemd_system_unitdir}
