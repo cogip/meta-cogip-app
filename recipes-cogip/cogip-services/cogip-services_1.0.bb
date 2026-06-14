@@ -23,10 +23,10 @@ S = "${UNPACKDIR}"
 # recipe installs cogip-app-image / cogip-app-load only when the tarball
 # is staged; pulling them via RDEPENDS here would make the build fail
 # whenever the (conditional) cogip-app-image package is empty/absent.
-# The units read /etc/environment (EnvironmentFile / compose env_file) for
-# COMPOSE_PROFILES + the per-role config; that file is owned by
-# cogip-environment.
-RDEPENDS:${PN} = "docker-moby docker-compose cogip-environment"
+# The units read /etc/cogip/environment (EnvironmentFile / compose env_file)
+# for COMPOSE_PROFILES + the per-role config (owned by cogip-environment),
+# and bind-mount /opt/.venv (shipped by cogip-app-venv).
+RDEPENDS:${PN} = "docker-moby docker-compose cogip-environment cogip-app-venv"
 
 inherit systemd allarch
 
