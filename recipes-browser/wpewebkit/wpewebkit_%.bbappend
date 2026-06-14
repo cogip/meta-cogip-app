@@ -21,7 +21,31 @@ PACKAGECONFIG[gstreamer] = "-DUSE_GSTREAMER=ON,-DUSE_GSTREAMER=OFF -DUSE_GSTREAM
 # Leave `gstreamer` OUT of PACKAGECONFIG (its disable branch applies), and
 # drop the media features that DO have their own toggle (video /
 # mediasource / mediastream / webaudio) + flite (speech-synthesis).
-PACKAGECONFIG:remove = "video mediasource mediastream webaudio speech-synthesis"
+#
+# Kiosk strip: the dashboard is plain HTML/JS + an MJPEG <img> + canvas;
+# none of these are needed. accessibility (ATK/at-spi) is useless on a
+# headless kiosk and its at-spi-bus-launcher aborts without the GNOME
+# gsettings schemas; avif/jpegxl are exotic image codecs; hyphen is text
+# hyphenation; remote-inspector is the dev WebInspector; sysprof is
+# profiling capture.
+PACKAGECONFIG:remove = " \
+    video mediasource mediastream webaudio speech-synthesis \
+    accessibility avif jpegxl hyphen remote-inspector sysprof \
+"
+
+# Enable the modern WPE Platform DRM backend. cog --platform=drm otherwise
+# renders through wpebackend-fdo's embedded Wayland server, whose protocol
+# dispatch SEGVs against WPE 2.52's WebProcess (NULL message handler, opcode
+# 6). WPEPlatform talks to DRM/KMS directly, bypassing that path. Keep
+# wpe-legacy-api so cog still builds if it can't yet drive WPEPlatform (then
+# we know a newer cog is required).
+#
+# minibrowser: WPE's own reference browser, shipped IN this WebKit tree so
+# it is always version-matched to 2.52.4 (unlike cog 0.18.5). Diagnostic:
+# if MiniBrowser renders on WPEPlatform DRM but cog does not, the crash is
+# cog's version mismatch, not WPE/mesa/DRM. Can serve as a stopgap kiosk
+# renderer if cog stays broken.
+PACKAGECONFIG:append = " wpe-platform minibrowser"
 
 # WPE 2.52 NetworkCacheDataGLib.cpp #includes <gio/gfiledescriptorbased.h>
 # (gio-unix-2.0). That include path was only pulled in transitively via
