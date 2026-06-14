@@ -10,7 +10,7 @@ PartOf=cogip.target
 # Foreground `up` so systemd sees the container exit and restarts it.
 # Type=simple (not notify): sd_notify does not cross the container.
 Type=simple
-EnvironmentFile=/etc/environment
+EnvironmentFile=/etc/cogip/environment
 ExecStart=/usr/bin/docker compose -f /etc/cogip/compose.yml up --no-deps %i
 ExecStop=/usr/bin/docker compose -f /etc/cogip/compose.yml stop %i
 Restart=on-failure

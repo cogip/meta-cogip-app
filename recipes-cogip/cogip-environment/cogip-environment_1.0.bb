@@ -1,5 +1,5 @@
-SUMMARY = "Cogip per-role /etc/environment"
-DESCRIPTION = "Generates /etc/environment with the full per-role runtime \
+SUMMARY = "Cogip per-role /etc/cogip/environment"
+DESCRIPTION = "Generates /etc/cogip/environment with the full per-role runtime \
 configuration (robot dimensions, detector/planner tuning, GPIO pins), \
 resolved from the ROBOT_ID build variable exactly like raspios does \
 (0 = beacon, 1 = robot, 2 = ninja, 3-9 = pami). The specs come from \
@@ -70,7 +70,7 @@ do_install() {
         *)  bbfatal "cogip-environment: ROBOT_ID '$rid' invalid (expected 0-9)" ;;
     esac
 
-    install -d ${D}${sysconfdir}
+    install -d ${D}${sysconfdir}/cogip
 
     # Render the template: fill the CUSTOM_* placeholders and the
     # socket-io port suffix (localhost:809<id>).
@@ -86,7 +86,7 @@ do_install() {
         -e "s/CUSTOM_DETECTOR_CLUSTER_EPS/$deps/" \
         -e "s/CUSTOM_PLANNER_OBSTACLE_BB_MARGIN/$bbmargin/" \
         -e "s/809ROBOT_ID/809$rid/" \
-        "${UNPACKDIR}/cogip-environment.template" > ${D}${sysconfdir}/environment
+        "${UNPACKDIR}/cogip-environment.template" > ${D}${sysconfdir}/cogip/environment
 
     # Uncomment + fill the type-specific GPIO pins (raspios stage2).
     case "$rid" in
@@ -94,7 +94,7 @@ do_install() {
               -e "s|# PLANNER_STARTER_PIN=|PLANNER_STARTER_PIN=$ROBOT_STARTER_PIN|" \
               -e "s|# PLANNER_SCSERVOS_PORT=|PLANNER_SCSERVOS_PORT=$ROBOT_SCSERVOS_PORT|" \
               -e "s|# PLANNER_SCSERVOS_BAUD_RATE=|PLANNER_SCSERVOS_BAUD_RATE=$ROBOT_SCSERVOS_BAUD_RATE|" \
-              ${D}${sysconfdir}/environment ;;
+              ${D}${sysconfdir}/cogip/environment ;;
         2)  sed -i \
               -e "s/# PLANNER_LED_RED_PIN=/PLANNER_LED_RED_PIN=$NINJA_LED_RED_PIN/" \
               -e "s/# PLANNER_LED_GREEN_PIN=/PLANNER_LED_GREEN_PIN=$NINJA_LED_GREEN_PIN/" \
@@ -102,7 +102,7 @@ do_install() {
               -e "s/# PLANNER_FLAG_MOTOR_PIN=/PLANNER_FLAG_MOTOR_PIN=$NINJA_FLAG_MOTOR_PIN/" \
               -e "s/# PLANNER_OLED_BUS=/PLANNER_OLED_BUS=$NINJA_OLED_BUS/" \
               -e "s/# PLANNER_OLED_ADDRESS=/PLANNER_OLED_ADDRESS=$NINJA_OLED_ADDRESS/" \
-              ${D}${sysconfdir}/environment ;;
+              ${D}${sysconfdir}/cogip/environment ;;
         [3-9])  sed -i \
               -e "s/# PLANNER_LED_RED_PIN=/PLANNER_LED_RED_PIN=$PAMI_LED_RED_PIN/" \
               -e "s/# PLANNER_LED_GREEN_PIN=/PLANNER_LED_GREEN_PIN=$PAMI_LED_GREEN_PIN/" \
@@ -110,14 +110,14 @@ do_install() {
               -e "s/# PLANNER_FLAG_MOTOR_PIN=/PLANNER_FLAG_MOTOR_PIN=$PAMI_FLAG_MOTOR_PIN/" \
               -e "s/# PLANNER_OLED_BUS=/PLANNER_OLED_BUS=$PAMI_OLED_BUS/" \
               -e "s/# PLANNER_OLED_ADDRESS=/PLANNER_OLED_ADDRESS=$PAMI_OLED_ADDRESS/" \
-              ${D}${sysconfdir}/environment ;;
+              ${D}${sysconfdir}/cogip/environment ;;
     esac
 
     # Orchestration vars: COMPOSE_PROFILES selects the compose profile and
     # ROBOT_ID is read by the tools. Previously emitted by cogip-services;
     # this recipe now owns the whole file.
     printf 'ROBOT_ID=%s\nCOMPOSE_PROFILES=%s\n' "$rid" "$profile" \
-        >> ${D}${sysconfdir}/environment
+        >> ${D}${sysconfdir}/cogip/environment
 }
 
-FILES:${PN} = "${sysconfdir}/environment"
+FILES:${PN} = "${sysconfdir}/cogip/environment"

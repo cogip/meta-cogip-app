@@ -18,7 +18,7 @@ x-common: &common
   network_mode: host          # CAN (socketcan can0) + inter-tool localhost
   ipc: host                   # shared-memory (cogip.cpp shared_memory)
   restart: "no"               # systemd owns restart/retry
-  env_file: /etc/environment   # full per-role env (cogip-environment recipe)
+  env_file: /etc/cogip/environment   # full per-role env (cogip-environment recipe)
   working_dir: /src
   volumes:
     - /opt/.venv:/opt/.venv     # editable COGIP tools, persisted on rootfs
