@@ -7,7 +7,10 @@ Description=Cogip persistent data partition
 What=/dev/disk/by-label/data
 Where=/data
 Type=ext4
-Options=defaults,noatime
+# x-systemd.growfs: when /data is raw-copied from a pre-loaded ext4
+# (cogip-sdimage-app.wks) smaller than the 8 GiB partition, grow the fs to
+# fill it on first mount. No-op once already at full size.
+Options=defaults,noatime,x-systemd.growfs
 
 [Install]
 WantedBy=local-fs.target

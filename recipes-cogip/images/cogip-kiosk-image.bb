@@ -7,8 +7,13 @@ inherit core-image
 
 # This layer owns the image and its partitioning: a 3-partition layout
 # (boot / root / data), the data partition holding Docker storage and
-# mutable on-device data. See wic/cogip-sdimage.wks.
-WKS_FILE = "cogip-sdimage.wks"
+# mutable on-device data.
+#
+# With the Docker app stack (COGIP_APP), use the variant whose /data is
+# raw-copied from cogip-data.ext4 (image pre-loaded into the Docker store,
+# built by `make app-data`) so first boot skips `docker load`. A bare
+# kiosk (COGIP_APP=0) keeps an empty /data.
+WKS_FILE = "${@'cogip-sdimage-app.wks' if d.getVar('COGIP_APP') in ('1', 'yes', 'true') else 'cogip-sdimage.wks'}"
 
 # Image features kept intentionally small to favour boot time. ssh-server
 # is included for field debugging; drop it once the unit is stable.
@@ -66,6 +71,23 @@ IMAGE_INSTALL += "${@bb.utils.contains_any('COGIP_APP', '1 yes true', ' \
     cogip-app-image \
     cogip-app-load \
 ', '', d)}"
+
+# When the app stack is built, the data partition is raw-copied from the
+# pre-loaded cogip-data.ext4 (built by `make app-data`, sitting in DL_DIR).
+# wic's rawcopy resolves `file=` from DEPLOY_DIR_IMAGE, so symlink the
+# multi-GB blob there just before wic -- a symlink, NOT a copy, to avoid
+# routing several GB through a recipe/sstate (which fills the disk).
+cogip_stage_data_ext4() {
+    case "${COGIP_APP}" in
+        1|yes|true)
+            if [ ! -f "${DL_DIR}/cogip-data.ext4" ]; then
+                bbfatal "cogip-data.ext4 missing in DL_DIR -- run 'make app-data'"
+            fi
+            ln -sf "${DL_DIR}/cogip-data.ext4" "${DEPLOY_DIR_IMAGE}/cogip-data.ext4"
+            ;;
+    esac
+}
+do_image_wic[prefuncs] += "cogip_stage_data_ext4"
 
 # Strip development tooling: kernel-dev, gdb, etc. Image is reflashed,
 # not patched on-target.

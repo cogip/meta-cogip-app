@@ -1,0 +1,11 @@
+# short-description: Cogip kiosk SD card image, /data pre-loaded (COGIP_APP)
+# long-description: Same 3-partition layout as cogip-sdimage.wks, but the
+# data partition is raw-copied from cogip-data.ext4 (built by
+# `make app-data`): the Docker store already holds the Cogip image, so the
+# Pi skips the slow first-boot `docker load`. The ext4 is smaller than the
+# 8 GiB partition; data.mount grows it (x-systemd.growfs) on first mount.
+# cogip-data-image deploys cogip-data.ext4 into DEPLOY_DIR_IMAGE for wic.
+
+part /boot --source bootimg-partition --ondisk mmcblk0 --fstype=vfat --label boot --active --align 4096 --size 100
+part /     --source rootfs            --ondisk mmcblk0 --fstype=ext4 --label root --align 4096
+part /data --source rawcopy --sourceparams="file=cogip-data.ext4" --ondisk mmcblk0 --fstype=ext4 --label data --align 4096 --fixed-size 8192
