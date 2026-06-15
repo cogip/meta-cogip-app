@@ -96,9 +96,17 @@ do_image_wic[prefuncs] += "cogip_stage_data_ext4"
 # wins, but masking before preset-all makes it fail ("Unit ... is
 # masked"). So mask it at the END of systemd_handle_machine_id, i.e. right
 # AFTER its two preset-all calls.
+#
+# serial-getty@ttyS0 is masked for the same reason but a different goal:
+# it is enabled by a static getty.target wants symlink, yet /dev/ttyS0
+# (the mini-UART) never appears -- the console is ttyAMA0 and the cmdline
+# sets 8250.nr_uarts=1. So dev-ttyS0.device hits its 90s device timeout
+# and gates multi-user.target, pushing full boot from ~22s to ~97s. Mask
+# it so the device is never waited on.
 systemd_handle_machine_id:append() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/getty@tty1.service
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/serial-getty@ttyS0.service
 }
 
 # Strip development tooling: kernel-dev, gdb, etc. Image is reflashed,
