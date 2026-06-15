@@ -70,6 +70,11 @@ services:
     <<: *common
     command: ["/opt/.venv/bin/cogip-server"]
     profiles: ["robot"]
+    # All other tools connect to this hub, so its cold start gates the
+    # whole chain at boot. Give it a higher relative CPU weight (default
+    # 1024) so it wins the boot contention (6 tools cold-starting at once
+    # on 4 cores) and the chain cascades sooner. Only matters under load.
+    cpu_shares: 4096
 
   planner:
     <<: [*common, *hw]
