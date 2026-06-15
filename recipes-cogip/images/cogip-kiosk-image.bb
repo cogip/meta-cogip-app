@@ -103,10 +103,19 @@ do_image_wic[prefuncs] += "cogip_stage_data_ext4"
 # sets 8250.nr_uarts=1. So dev-ttyS0.device hits its 90s device timeout
 # and gates multi-user.target, pushing full boot from ~22s to ~97s. Mask
 # it so the device is never waited on.
+# systemd-networkd-wait-online is masked too: every cogip tool and docker
+# itself pull network-online.target, which blocks on wait-online until an
+# interface is routable (~4-7s). Nothing here needs external network at
+# boot -- all tools run with network_mode: host (localhost + CAN) and the
+# Docker image is already local -- so masking it makes network-online.target
+# passive (reached immediately), trimming the critical path. Side effect:
+# network-online becomes instant system-wide; revisit if a future service
+# genuinely needs the external network up before it starts.
 systemd_handle_machine_id:append() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/getty@tty1.service
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/serial-getty@ttyS0.service
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/systemd-networkd-wait-online.service
 }
 
 # Strip development tooling: kernel-dev, gdb, etc. Image is reflashed,
