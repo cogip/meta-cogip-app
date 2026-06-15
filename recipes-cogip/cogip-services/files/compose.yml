@@ -31,6 +31,10 @@ x-common: &common
 # (uart2 -> ttyAMA2 MCU, uart4 -> ttyAMA4 lidar), i2c-1 from i2c1, and the
 # servo board is a WCH USB-serial that enumerates as CDC-ACM -> ttyACM0
 # (matches ROBOT_SCSERVOS_PORT), not ttyUSB0.
+# No group_add: the tool containers run as root, which accesses the
+# devices regardless of group. group_add would also fail at `up` time --
+# docker resolves the names against the IMAGE's /etc/group, which has no
+# i2c/gpio group (only RPi OS creates those) -- so it must stay out.
 x-hw: &hw
   devices:
     - /dev/ttyACM0
@@ -38,10 +42,6 @@ x-hw: &hw
     - /dev/ttyAMA4
     - /dev/i2c-1
     - /dev/gpiochip0
-  group_add:
-    - dialout
-    - i2c
-    - gpio
 
 # Camera (libcamera/picamera2). dma_heap major is dynamic, so allow the
 # heap + v4l class via cgroup rules in addition to the static nodes.
@@ -49,8 +49,6 @@ x-camera: &camera
   devices:
     - /dev/video0
     - /dev/media0
-  group_add:
-    - video
   device_cgroup_rules:
     - 'c 81:* rmw'    # Video4Linux
     - 'c 245:* rmw'   # dma_heap (verify major on target, adjust if needed)
