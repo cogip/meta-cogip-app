@@ -1,0 +1,20 @@
+[Unit]
+Description=Load the pre-shipped Cogip Docker image into the local store
+Requires=docker.service data.mount
+After=docker.service data.mount
+# The cogip@ tool services consume the loaded image, so they must wait
+# for this oneshot to finish.
+Before=cogip.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# First boot docker-loads the ~1 GB image tarball into the store on /data
+# (the venv is now pre-shipped on the rootfs, no longer copied here). That
+# can still take a few minutes on SD, so never let the default start
+# timeout kill it mid-load (a partial load just gets retried next boot).
+TimeoutStartSec=0
+ExecStart=/usr/bin/cogip-app-load
+
+[Install]
+WantedBy=multi-user.target
