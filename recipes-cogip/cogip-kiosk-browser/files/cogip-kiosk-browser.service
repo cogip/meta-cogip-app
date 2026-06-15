@@ -1,0 +1,42 @@
+[Unit]
+Description=Cogip kiosk (WPE WebKit MiniBrowser on WPE Platform DRM)
+Documentation=https://wpewebkit.org/
+# The kiosk shows a local URL (localhost), so it must NOT wait for
+# network-online -- that would stall the display by the networkd
+# wait-online timeout when no link is up.
+After=systemd-user-sessions.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cogip-kiosk-browser
+Restart=always
+RestartSec=1
+
+# ROBOT_ID (which sets the dashboard port, 8080 + ROBOT_ID) comes from the
+# role env file written by cogip-environment.
+EnvironmentFile=-/etc/cogip/environment
+
+# WPE Platform DRM backend: MiniBrowser renders straight to KMS on the
+# vc4-kms display node (card0; card1 is the v3d render node) -- no
+# wpebackend-fdo. MiniBrowser needs an XDG_RUNTIME_DIR; RuntimeDirectory
+# creates /run/cog for it.
+Environment=WPE_DISPLAY=wpe-display-drm
+Environment=WPE_DRM_DEVICE=/dev/dri/card0
+Environment=XDG_RUNTIME_DIR=/run/cog
+RuntimeDirectory=cog
+
+# Run as root for now (Pi 4 kiosk, no multi-user). Tighten to a
+# dedicated `kiosk` user once the unit is stable.
+User=root
+
+# Own tty1 so the kiosk is the foreground VT / DRM master (getty@tty1 is
+# kept off by the image console policy).
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+
+[Install]
+WantedBy=multi-user.target
