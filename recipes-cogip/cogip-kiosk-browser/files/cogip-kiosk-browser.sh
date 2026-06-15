@@ -17,4 +17,20 @@ set -eu
 
 KIOSK_URL="${KIOSK_URL:-http://localhost:$((8080 + ${ROBOT_ID:-0}))}"
 
+# Wait for the dashboard to start serving before launching MiniBrowser.
+# The dashboard is a container that only begins listening ~30 s after
+# boot, and MiniBrowser does not retry a refused connection -- it would
+# sit forever on a "Connection refused" error page. Poll the URL (busybox
+# wget; -T 2 keeps a refused connection fast) until it answers, capped at
+# ~2 min so the kiosk still comes up if the dashboard never does.
+i=0
+until wget -q -T 2 -O /dev/null "${KIOSK_URL}" 2>/dev/null; do
+    i=$((i + 1))
+    if [ "$i" -ge 120 ]; then
+        echo "cogip-kiosk-browser: ${KIOSK_URL} still down after ${i}s, launching anyway" >&2
+        break
+    fi
+    sleep 1
+done
+
 exec /usr/libexec/wpe-webkit-2.0/MiniBrowser "${KIOSK_URL}"
