@@ -26,10 +26,16 @@ x-common: &common
     - /data/vscode-server:/root/.vscode-server   # persist VSCode server
 
 # Serial / I2C / GPIO peripherals (servos, OLED, lidar UART, MCU UART).
+# NOTE: docker fails to START a service if ANY listed device is absent, so
+# all of these must exist: the UARTs come from the config.txt overlays
+# (uart2 -> ttyAMA2 MCU, uart4 -> ttyAMA4 lidar), i2c-1 from i2c1, and the
+# servo board is a WCH USB-serial that enumerates as CDC-ACM -> ttyACM0
+# (matches ROBOT_SCSERVOS_PORT), not ttyUSB0.
 x-hw: &hw
   devices:
-    - /dev/ttyUSB0
+    - /dev/ttyACM0
     - /dev/ttyAMA2
+    - /dev/ttyAMA4
     - /dev/i2c-1
     - /dev/gpiochip0
   group_add:
