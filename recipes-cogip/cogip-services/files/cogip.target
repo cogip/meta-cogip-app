@@ -2,7 +2,7 @@
 Description=Cogip application stack
 Requires=cogip-app-load.service
 After=cogip-app-load.service
-Wants=cog-kiosk.service
+Wants=cogip-kiosk-browser.service
 
 [Install]
 WantedBy=multi-user.target

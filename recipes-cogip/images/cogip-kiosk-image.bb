@@ -31,22 +31,22 @@ IMAGE_FEATURES += " \
     post-install-logging \
 "
 
-# Cog runs in its DRM platform (see meta-cogip/.../cog_%.bbappend) so
-# there's no Wayland compositor in the image: WPE WebKit talks directly
-# to /dev/dri/card0 via Mesa GBM. Minimal, fast, hardware-accelerated.
+# The kiosk renderer is WPE WebKit's MiniBrowser on the WPE Platform DRM
+# backend (see cogip-kiosk-browser / the wpewebkit bbappend): WPE talks
+# straight to the vc4-kms DRM node, no compositor. cog itself is NOT
+# installed -- its wpebackend-fdo DRM path SEGVs against WPE 2.52.
 IMAGE_INSTALL += " \
     kernel-modules \
     linux-firmware-rpidistro-bcm43455 \
     wireless-regdb-static \
     rfkill \
-    cog \
     wpewebkit \
     mesa \
     libdrm \
     libinput \
     fontconfig \
     ttf-dejavu-sans \
-    cog-service \
+    cogip-kiosk-browser \
     cogip-net \
     wpa-supplicant \
     systemd \
@@ -88,6 +88,18 @@ cogip_stage_data_ext4() {
     esac
 }
 do_image_wic[prefuncs] += "cogip_stage_data_ext4"
+
+# Console policy: keep getty@tty1 off so the kiosk owns the HDMI VT / DRM
+# master. A "disable" preset is ignored -- OE runs `preset-all` with
+# --preset-mode=enable-only, so disables are no-ops -- and getty@tty1 is
+# enabled by a static wants symlink anyway. Only a mask (-> /dev/null)
+# wins, but masking before preset-all makes it fail ("Unit ... is
+# masked"). So mask it at the END of systemd_handle_machine_id, i.e. right
+# AFTER its two preset-all calls.
+systemd_handle_machine_id:append() {
+    install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/getty@tty1.service
+}
 
 # Strip development tooling: kernel-dev, gdb, etc. Image is reflashed,
 # not patched on-target.
