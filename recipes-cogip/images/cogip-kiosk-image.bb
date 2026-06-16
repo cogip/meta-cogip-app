@@ -72,6 +72,14 @@ IMAGE_INSTALL += "${@bb.utils.contains_any('COGIP_APP', '1 yes true', ' \
     cogip-app-load \
 ', '', d)}"
 
+# Native-deployment groundwork (spike): pull python3 + the system Python/C
+# deps the native venv will need but cannot get from pip -- libserial (lidar
+# drivers), libcamera pycamera + pykms (camera), systemd-python, python-prctl.
+# Additive, so the Docker stack is unaffected; lets us validate these import
+# on the target's Python 3.14 before cutting over. Remove once a dedicated
+# native image replaces the Docker one.
+IMAGE_INSTALL += "${@bb.utils.contains_any('COGIP_APP', '1 yes true', ' packagegroup-cogip-native-deps ', '', d)}"
+
 # When the app stack is built, the data partition is raw-copied from the
 # pre-loaded cogip-data.ext4 (built by `make app-data`, sitting in DL_DIR).
 # wic's rawcopy resolves `file=` from DEPLOY_DIR_IMAGE, so symlink the
