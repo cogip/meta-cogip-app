@@ -15,6 +15,7 @@ RDEPENDS:${PN} = " \
     python3-aiohttp \
     python3-aioserial \
     python3-aiosignal \
+    python3-annotated-doc \
     python3-annotated-types \
     python3-anyio \
     python3-asttokens \
