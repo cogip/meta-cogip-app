@@ -12,9 +12,9 @@
 # `inherit python_wheel`. LIC_FILES_CHKSUM points inside the extracted
 # dist-info (paths are relative to S).
 
-inherit python3-dir
+inherit python3-dir python3native
 
-DEPENDS += "unzip-native"
+DEPENDS += "unzip-native python3-native"
 
 # Has compiled .so -> arch-specific, not allarch.
 PACKAGE_ARCH = "${TUNE_PKGARCH}"
@@ -38,6 +38,15 @@ do_install() {
     cp -rf ${S}/. ${D}${PYTHON_SITEPACKAGES_DIR}/
     # Drop the wheel itself (it sits in UNPACKDIR = S) from site-packages.
     rm -f ${D}${PYTHON_SITEPACKAGES_DIR}/${WHEEL}
+
+    # Pre-compile to bytecode: unzipped wheels ship .py only, so the FIRST
+    # import on the target compiles .pyc on the fly (slow cold start, e.g. the
+    # cogip/server/dashboard boot). The native python3 is the same 3.14 as the
+    # target, so its .pyc (cpython-314) are valid on-device. Strip the destdir
+    # from the embedded paths (-s) so they read as /usr/lib/... at runtime.
+    ${PYTHON} -m compileall -q -j 0 \
+        -s ${D} -p / \
+        ${D}${PYTHON_SITEPACKAGES_DIR} || true
 }
 
 FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}"
