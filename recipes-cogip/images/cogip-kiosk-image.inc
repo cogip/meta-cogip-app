@@ -71,11 +71,20 @@ COGIP_APP ??= "1"
 # (reached immediately), trimming the critical path. Side effect:
 # network-online becomes instant system-wide; revisit if a future service
 # genuinely needs the external network up before it starts.
+# avahi (mDNS/.local), ofono (3G/modem) and rpcbind (NFS portmapper) start at
+# boot but the kiosk needs none of them (addressed by IP, no modem, no NFS).
+# They cost ~1.5s of boot and pull the network. Mask the services AND their
+# socket units (socket-activated, else the socket re-pulls the service).
 systemd_handle_machine_id:append() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/getty@tty1.service
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/serial-getty@ttyS0.service
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/systemd-networkd-wait-online.service
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/avahi-daemon.service
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/avahi-daemon.socket
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/ofono.service
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/rpcbind.service
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/rpcbind.socket
 }
 
 # Strip development tooling: image is reflashed, not patched on-target.
