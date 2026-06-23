@@ -19,10 +19,15 @@ DEPENDS += "unzip-native"
 # Has compiled .so -> arch-specific, not allarch.
 PACKAGE_ARCH = "${TUNE_PKGARCH}"
 
+# Source is a single .whl copied into UNPACKDIR (not an archive bitbake
+# extracts to ${BP}). Point S at UNPACKDIR -- which exists right after
+# do_unpack -- so the default S-exists check does not warn, and the license
+# check (LIC_FILES_CHKSUM relative to S) finds the extracted dist-info.
+S = "${UNPACKDIR}"
+
 # A .whl is a zip but bitbake does not auto-extract that suffix. Extract it
-# ourselves into S, before the license check and packaging.
+# ourselves (into S = UNPACKDIR), before the license check and packaging.
 do_unpack_wheel() {
-    install -d ${S}
     unzip -q -o ${UNPACKDIR}/${WHEEL} -d ${S}
 }
 addtask unpack_wheel after do_unpack before do_populate_lic do_configure
@@ -31,6 +36,8 @@ do_unpack_wheel[depends] += "unzip-native:do_populate_sysroot"
 do_install() {
     install -d ${D}${PYTHON_SITEPACKAGES_DIR}
     cp -rf ${S}/. ${D}${PYTHON_SITEPACKAGES_DIR}/
+    # Drop the wheel itself (it sits in UNPACKDIR = S) from site-packages.
+    rm -f ${D}${PYTHON_SITEPACKAGES_DIR}/${WHEEL}
 }
 
 FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}"
