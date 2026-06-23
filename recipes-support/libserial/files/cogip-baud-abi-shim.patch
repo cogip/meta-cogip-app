@@ -1,0 +1,78 @@
+Description: Map Debian/classic termios baud codes to the local libc literal
+ encoding. The cogip.cpp wheel is cross-built on Debian (B230400=4099) but runs
+ on a Yocto rootfs whose libc uses the literal (B230400=230400). SetBaudRate
+ passes the value to cfsetspeed AND GetBitRate (a switch over BaudRate compiled
+ with local values); Debian's code matches no case -> 'Invalid baud rate' (lidar).
+ Normalise at entry so both agree. Drop once cogip.cpp is cross-compiled in Yocto.
+Upstream-Status: Inappropriate [cogip cross-libc deployment shim, not for upstream]
+
+diff --git a/src/SerialPort.cpp b/src/SerialPort.cpp
+index edbaeaf..ccc8676 100644
+--- a/src/SerialPort.cpp
++++ b/src/SerialPort.cpp
+@@ -1112,10 +1112,47 @@ namespace LibSerial
+         SetVTime(VTIME_DEFAULT) ;
+     }
+ 
++namespace
++{
++    // ABI shim for cross-libc deployment: the cogip.cpp wheel is built on
++    // Debian (classic termios baud codes, B230400 = 0010003 = 4099) but runs
++    // on a Yocto rootfs whose libc encodes bauds as the literal (B230400 =
++    // 230400). SetBaudRate feeds the value to cfsetspeed AND to GetBitRate,
++    // whose switch over BaudRate (compiled with local/literal values) does not
++    // match Debian's code -> "Invalid baud rate". Map classic codes to the
++    // literal so both agree; pass other values through unchanged.
++    speed_t cogip_normalize_baud(speed_t code)
++    {
++        switch (code)
++        {
++            case 1:      return 50 ;     case 2:      return 75 ;
++            case 3:      return 110 ;    case 4:      return 134 ;
++            case 5:      return 150 ;    case 6:      return 200 ;
++            case 7:      return 300 ;    case 8:      return 600 ;
++            case 9:      return 1200 ;   case 10:     return 1800 ;
++            case 11:     return 2400 ;   case 12:     return 4800 ;
++            case 13:     return 9600 ;   case 14:     return 19200 ;
++            case 15:     return 38400 ;
++            case 0x1001: return 57600 ;  case 0x1002: return 115200 ;
++            case 0x1003: return 230400 ; case 0x1004: return 460800 ;
++            case 0x1005: return 500000 ; case 0x1006: return 576000 ;
++            case 0x1007: return 921600 ; case 0x1008: return 1000000 ;
++            case 0x1009: return 1152000 ;case 0x100A: return 1500000 ;
++            case 0x100B: return 2000000 ;case 0x100C: return 2500000 ;
++            case 0x100D: return 3000000 ;case 0x100E: return 3500000 ;
++            case 0x100F: return 4000000 ;
++            default:     return code ;
++        }
++    }
++}
++
+     inline
+     void
+     SerialPort::Implementation::SetBaudRate(const BaudRate& baudRate)
+     {
++        // cogip: normalise Debian classic baud codes to the local libc encoding.
++        const BaudRate baudRateLocal = static_cast<BaudRate>(cogip_normalize_baud(static_cast<speed_t>(baudRate))) ;
++
+         // Throw an exception if the serial port is not open.
+         if (not this->IsOpen())
+         {
+@@ -1133,7 +1170,7 @@ namespace LibSerial
+         }
+ 
+         // Set the baud rate for both input and output.
+-        if (0 != cfsetspeed(&port_settings, static_cast<speed_t>(baudRate)))
++        if (0 != cfsetspeed(&port_settings, static_cast<speed_t>(baudRateLocal)))
+         {
+             // If applying the baud rate settings fail, throw an exception.
+             throw std::runtime_error(ERR_MSG_INVALID_BAUD_RATE) ;
+@@ -1149,7 +1186,7 @@ namespace LibSerial
+         }
+ 
+         // Set the time interval value (us) required for one byte of data to arrive.
+-        mByteArrivalTimeDelta = (BITS_PER_BYTE * MICROSECONDS_PER_SEC) / GetBitRate(baudRate) ;
++        mByteArrivalTimeDelta = (BITS_PER_BYTE * MICROSECONDS_PER_SEC) / GetBitRate(baudRateLocal) ;
+     }
+ 
+     inline

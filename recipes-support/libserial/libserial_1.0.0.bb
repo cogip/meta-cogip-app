@@ -14,9 +14,17 @@ LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=fdcb31da81c085fd445062a1eb929089"
 # 2024-07 `exclusive` parameter (commit 283a0fe, an ABI break). The result is
 # the 2-arg SerialPort::Open(string const&, ios_base::openmode const&) the
 # wheel imports; plain master (3-arg) does not export it -> undefined symbol.
+#
+# Second patch (cogip-baud-abi-shim): the wheel is cross-built on Debian, whose
+# termios encodes bauds as classic codes (B230400 = 4099), but the Yocto
+# runtime libc uses the literal (B230400 = 230400). SerialPort::SetBaudRate
+# would feed Debian's code to the local cfsetspeed, which rejects it -> the
+# lidar "Invalid baud rate". The shim maps classic codes to the literal baud.
+# Remove once cogip.cpp is cross-compiled against the Yocto sysroot.
 SRC_URI = " \
     git://github.com/crayzeewulf/libserial.git;branch=master;protocol=https \
     file://revert-283a0fe-exclusive.patch \
+    file://cogip-baud-abi-shim.patch \
 "
 SRCREV = "a471ae8dee54e8770e4d47e60fba4acf29d8e7ad"
 
