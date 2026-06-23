@@ -102,6 +102,10 @@ do_install() {
               -e "s/# PLANNER_FLAG_MOTOR_PIN=/PLANNER_FLAG_MOTOR_PIN=$NINJA_FLAG_MOTOR_PIN/" \
               -e "s/# PLANNER_OLED_BUS=/PLANNER_OLED_BUS=$NINJA_OLED_BUS/" \
               -e "s/# PLANNER_OLED_ADDRESS=/PLANNER_OLED_ADDRESS=$NINJA_OLED_ADDRESS/" \
+              -e "s|# PLANNER_SCSERVOS_PORT=|PLANNER_SCSERVOS_PORT=$ROBOT_SCSERVOS_PORT|" \
+              -e "s|# PLANNER_SCSERVOS_BAUD_RATE=|PLANNER_SCSERVOS_BAUD_RATE=$ROBOT_SCSERVOS_BAUD_RATE|" \
+              -e "s|# *PLANNER_STRATEGY=.*|PLANNER_STRATEGY=Ninja|" \
+              -e "s|# *PLANNER_START_POSITION=.*|PLANNER_START_POSITION=NINJA|" \
               ${D}${sysconfdir}/cogip/environment ;;
         [3-9])  sed -i \
               -e "s/# PLANNER_LED_RED_PIN=/PLANNER_LED_RED_PIN=$PAMI_LED_RED_PIN/" \
