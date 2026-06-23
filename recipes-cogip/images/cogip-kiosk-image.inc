@@ -42,6 +42,7 @@ IMAGE_INSTALL += " \
     cogip-net \
     wpa-supplicant \
     systemd \
+    systemd-analyze \
 "
 
 # Role / app selection. COGIP_APP=0 builds a bare kiosk (Cog + networking
