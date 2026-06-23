@@ -25,7 +25,11 @@ do_install:append() {
         spec=$(echo "$line" | cut -d= -f2 | tr -d ' ')
         module=$(echo "$spec" | cut -d: -f1)
         func=$(echo "$spec" | cut -d: -f2)
-        printf '#!/usr/bin/python3\nimport sys\nfrom %s import %s\nsys.exit(%s())\n' \
+        # The `if __name__ == "__main__"` guard is REQUIRED: Python 3.14
+        # defaults multiprocessing to a non-fork start method, so the spawned
+        # children re-import this script as __main__; without the guard main()
+        # re-runs and re-spawns -> RuntimeError (planner avoidance subprocess).
+        printf '#!/usr/bin/python3\nimport sys\nfrom %s import %s\nif __name__ == "__main__":\n    sys.exit(%s())\n' \
             "$module" "$func" "$func" > ${D}${bindir}/$name
         chmod 0755 ${D}${bindir}/$name
     done
