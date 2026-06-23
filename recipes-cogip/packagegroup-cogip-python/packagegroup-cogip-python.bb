@@ -32,7 +32,7 @@ RDEPENDS:${PN} = " \
     python3-cython \
     python3-dateutil \
     python3-devtools \
-    python3-dotenv \
+    python3-python-dotenv \
     python3-engineio \
     python3-executing \
     python3-fastapi \
