@@ -1,11 +1,15 @@
-SUMMARY = "OpenCV + contrib Python bindings (prebuilt wheel, provides cv2/aruco)"
+SUMMARY = "OpenCV + contrib Python bindings, headless (prebuilt wheel, cv2/aruco)"
 HOMEPAGE = "https://opencv.org"
 LICENSE = "Apache-2.0"
-LIC_FILES_CHKSUM = "file://opencv_contrib_python-4.13.0.92.dist-info/LICENSE.txt;md5=c4a59ea6fdfe49caa8470881ba0a6ffa"
+LIC_FILES_CHKSUM = "file://opencv_contrib_python_headless-4.13.0.92.dist-info/LICENSE.txt;md5=c4a59ea6fdfe49caa8470881ba0a6ffa"
 
-WHEEL = "opencv_contrib_python-${PV}-cp37-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.whl"
-SRC_URI = "https://files.pythonhosted.org/packages/ff/7a/fe87eaf109b454af4a2579f46958b3cafb0f804b9c788c108760723a9bb7/${WHEEL}"
-SRC_URI[sha256sum] = "5f9cb522dd9e465dfca3536c15288f7936b9827432fb9c885eaf94dc5f88c2a3"
+# Headless variant: cogip uses cv2 for image processing (aruco, drawing,
+# imencode), never the highgui GUI on the robot. The non-headless wheel's cv2
+# links libxcb/X11 (highgui), absent on this no-X kiosk image -> ImportError
+# on the camera tools. The headless build drops the GUI deps entirely.
+WHEEL = "opencv_contrib_python_headless-${PV}-cp37-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.whl"
+SRC_URI = "https://files.pythonhosted.org/packages/14/84/e6b3568f9147b4f114e881fb0e733fd97bdca15452feba78b510351584d1/${WHEEL}"
+SRC_URI[sha256sum] = "449c1f00a685a3a7dff8d6fa93a70fbfe0de5537c24358ea03a1d996d12b33e8"
 
 inherit python_wheel
 
