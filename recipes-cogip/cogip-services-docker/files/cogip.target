@@ -1,5 +1,7 @@
 [Unit]
 Description=Cogip application stack
+Requires=cogip-app-load.service
+After=cogip-app-load.service
 Wants=cogip-kiosk-browser.service
 
 [Install]

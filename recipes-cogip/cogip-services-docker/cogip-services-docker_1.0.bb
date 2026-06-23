@@ -1,12 +1,13 @@
-SUMMARY = "Cogip application services (native, systemd-managed)"
-DESCRIPTION = "Ships a templated cogip@.service that runs each tool natively \
-on the system Python 3.14 (the cogip-%i console script), so systemd owns \
-restart/retry/ordering. No Docker. The set of enabled tools is selected by \
-the ROBOT_ID build variable (0 = beacon, 1-5 = robot)."
+SUMMARY = "Cogip application services (containerized, systemd-managed)"
+DESCRIPTION = "Ships the production docker compose (one service per tool) \
+plus a templated cogip@.service that drives each compose service in the \
+foreground, so systemd owns restart/retry/ordering. The set of enabled \
+tools is selected by the ROBOT_ID build variable (0 = beacon, 1-5 = robot)."
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
 SRC_URI = " \
+    file://compose.yml \
     file://cogip@.service \
     file://cogip.target \
     file://dropins/bind-server.conf \
@@ -17,10 +18,15 @@ SRC_URI = " \
 
 S = "${UNPACKDIR}"
 
-# Native runtime: the tools (cogip-tools + closure + system bindings) and the
-# per-role environment. The units read /etc/cogip/environment (per-role
-# config, owned by cogip-environment).
-RDEPENDS:${PN} = "cogip-tools cogip-environment"
+# Note: the relationship to cogip-app-load is a systemd runtime ordering
+# (Requires= in cogip@.service), NOT a packaging dependency. The image
+# recipe installs cogip-app-image / cogip-app-load only when the tarball
+# is staged; pulling them via RDEPENDS here would make the build fail
+# whenever the (conditional) cogip-app-image package is empty/absent.
+# The units read /etc/cogip/environment (EnvironmentFile / compose env_file)
+# for COMPOSE_PROFILES + the per-role config (owned by cogip-environment),
+# and bind-mount /opt/.venv (shipped by cogip-app-venv).
+RDEPENDS:${PN} = "docker-moby docker-compose cogip-environment cogip-app-venv"
 
 inherit systemd allarch
 
@@ -40,8 +46,12 @@ SYSTEMD_AUTO_ENABLE = "enable"
 do_install[vardeps] += "ROBOT_ID"
 
 do_install() {
+    # Config + compose
+    install -d ${D}${sysconfdir}/cogip
+    install -m 0644 ${UNPACKDIR}/compose.yml ${D}${sysconfdir}/cogip/compose.yml
+
     # The active server's instance name depends on the role; the role env
-    # itself (/etc/cogip/environment) is produced by the cogip-environment recipe.
+    # itself (/etc/environment) is produced by the cogip-environment recipe.
     if [ "${ROBOT_ID}" = "0" ]; then
         server="server-beacon"
     else
@@ -58,17 +68,19 @@ do_install() {
     install -m 0644 ${UNPACKDIR}/dropins/shm-cleanup.conf \
         ${D}${systemd_system_unitdir}/cogip@${server}.service.d/shm-cleanup.conf
 
-    # Dashboard (and the other tools) follow the active server lifecycle.
+    # Dashboard follows the active server.
     install -d ${D}${systemd_system_unitdir}/cogip@dashboard.service.d
     if [ "${ROBOT_ID}" = "0" ]; then
         install -m 0644 ${UNPACKDIR}/dropins/bind-server-beacon.conf \
             ${D}${systemd_system_unitdir}/cogip@dashboard.service.d/bind.conf
+        # beaconcam follows server-beacon
         install -d ${D}${systemd_system_unitdir}/cogip@beaconcam.service.d
         install -m 0644 ${UNPACKDIR}/dropins/bind-server-beacon.conf \
             ${D}${systemd_system_unitdir}/cogip@beaconcam.service.d/bind.conf
     else
         install -m 0644 ${UNPACKDIR}/dropins/bind-server.conf \
             ${D}${systemd_system_unitdir}/cogip@dashboard.service.d/bind.conf
+        # robot tools follow server
         for t in planner copilot detector mcu-logger robotcam; do
             install -d ${D}${systemd_system_unitdir}/cogip@$t.service.d
             install -m 0644 ${UNPACKDIR}/dropins/bind-server.conf \
@@ -83,6 +95,7 @@ do_install() {
 }
 
 FILES:${PN} = " \
+    ${sysconfdir}/cogip \
     ${sysconfdir}/tmpfiles.d/cogip.conf \
     ${systemd_system_unitdir} \
 "

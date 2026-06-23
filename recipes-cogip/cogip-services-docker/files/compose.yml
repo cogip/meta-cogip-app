@@ -1,0 +1,108 @@
+# Cogip production compose -- one service per tool, driven by systemd
+# (cogip@.service) which owns restart/ordering. Derived from the repo
+# docker-compose.yml but stripped of dev concerns (build, watch, X11,
+# vcan). The image is the pre-loaded cogip/cogip-tools:console.
+#
+# The COGIP tools live in /opt/.venv (wheel install in the image),
+# seeded onto the rootfs at first boot and bind-mounted in, so the
+# sources under /opt/.venv/lib/pythonX.Y/site-packages/cogip are editable
+# on the board (raspios-style). Each tool is the venv console script
+# /opt/.venv/bin/cogip-* run directly (no `uv run`).
+#
+# systemd starts each service with `docker compose up --no-deps <svc>`,
+# so restart policy is "no" here (systemd restarts), and ordering is
+# expressed via systemd drop-ins, not compose depends_on.
+
+x-common: &common
+  image: cogip/cogip-tools:console
+  network_mode: host          # CAN (socketcan can0) + inter-tool localhost
+  ipc: host                   # shared-memory (cogip.cpp shared_memory)
+  restart: "no"               # systemd owns restart/retry
+  env_file: /etc/cogip/environment   # full per-role env (cogip-environment recipe)
+  working_dir: /src
+  volumes:
+    - /opt/.venv:/opt/.venv     # editable COGIP tools, persisted on rootfs
+    - /run/cogip:/var/run/cogip
+    - /data/vscode-server:/root/.vscode-server   # persist VSCode server
+
+# Serial / I2C / GPIO peripherals (servos, OLED, lidar UART, MCU UART).
+# NOTE: docker fails to START a service if ANY listed device is absent, so
+# all of these must exist: the UARTs come from the config.txt overlays
+# (uart2 -> ttyAMA2 MCU, uart4 -> ttyAMA4 lidar), i2c-1 from i2c1, and the
+# servo board is a WCH USB-serial that enumerates as CDC-ACM -> ttyACM0
+# (matches ROBOT_SCSERVOS_PORT), not ttyUSB0.
+# No group_add: the tool containers run as root, which accesses the
+# devices regardless of group. group_add would also fail at `up` time --
+# docker resolves the names against the IMAGE's /etc/group, which has no
+# i2c/gpio group (only RPi OS creates those) -- so it must stay out.
+x-hw: &hw
+  devices:
+    - /dev/ttyACM0
+    - /dev/ttyAMA2
+    - /dev/ttyAMA4
+    - /dev/i2c-1
+    - /dev/gpiochip0
+
+# Camera (libcamera/picamera2). dma_heap major is dynamic, so allow the
+# heap + v4l class via cgroup rules in addition to the static nodes.
+x-camera: &camera
+  devices:
+    - /dev/video0
+    - /dev/media0
+  device_cgroup_rules:
+    - 'c 81:* rmw'    # Video4Linux
+    - 'c 245:* rmw'   # dma_heap (verify major on target, adjust if needed)
+
+services:
+  # ---- beacon role ----
+  server-beacon:
+    <<: *common
+    command: ["/opt/.venv/bin/cogip-server-beacon"]
+    profiles: ["beacon"]
+
+  beaconcam:
+    <<: [*common, *camera]
+    command: ["/opt/.venv/bin/cogip-beaconcam"]
+    profiles: ["beacon"]
+
+  # ---- robot role ----
+  server:
+    <<: *common
+    command: ["/opt/.venv/bin/cogip-server"]
+    profiles: ["robot"]
+    # All other tools connect to this hub, so its cold start gates the
+    # whole chain at boot. Give it a higher relative CPU weight (default
+    # 1024) so it wins the boot contention (6 tools cold-starting at once
+    # on 4 cores) and the chain cascades sooner. Only matters under load.
+    cpu_shares: 4096
+
+  planner:
+    <<: [*common, *hw]
+    command: ["/opt/.venv/bin/cogip-planner"]
+    profiles: ["robot"]
+
+  copilot:
+    <<: *common
+    command: ["/opt/.venv/bin/cogip-copilot"]
+    profiles: ["robot"]
+
+  detector:
+    <<: [*common, *hw]
+    command: ["/opt/.venv/bin/cogip-detector"]
+    profiles: ["robot"]
+
+  mcu-logger:
+    <<: [*common, *hw]
+    command: ["/opt/.venv/bin/cogip-mcu-logger"]
+    profiles: ["robot"]
+
+  robotcam:
+    <<: [*common, *camera]
+    command: ["/opt/.venv/bin/cogip-robotcam"]
+    profiles: ["robot"]
+
+  # ---- both roles ----
+  dashboard:
+    <<: *common
+    command: ["/opt/.venv/bin/cogip-dashboard"]
+    profiles: ["beacon", "robot"]

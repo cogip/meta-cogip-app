@@ -1,18 +1,16 @@
 [Unit]
-Description=Cogip tool %i (containerized)
-# The image must be loaded and the data partition mounted first.
-Requires=docker.service cogip-app-load.service
-After=docker.service cogip-app-load.service network-online.target
-Wants=network-online.target
+Description=Cogip tool %i (native)
+# Native: the tool runs directly on the system Python 3.14 (cogip-tools +
+# its deps installed in site-packages), no Docker. The instance name is the
+# tool name, matching the cogip-%i console script (e.g. cogip@planner ->
+# /usr/bin/cogip-planner). Per-role config from cogip-environment.
+After=network.target
 PartOf=cogip.target
 
 [Service]
-# Foreground `up` so systemd sees the container exit and restarts it.
-# Type=simple (not notify): sd_notify does not cross the container.
 Type=simple
 EnvironmentFile=/etc/cogip/environment
-ExecStart=/usr/bin/docker compose -f /etc/cogip/compose.yml up --no-deps %i
-ExecStop=/usr/bin/docker compose -f /etc/cogip/compose.yml stop %i
+ExecStart=/usr/bin/cogip-%i
 Restart=on-failure
 RestartSec=5
 
