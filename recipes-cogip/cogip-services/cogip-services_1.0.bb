@@ -29,10 +29,17 @@ inherit systemd allarch
 ROBOT_ID ??= "0"
 
 # Enable the right tool instances per role (+ the umbrella target).
+# Robot-role tools. robotcam is only enabled on camera-equipped robots; the
+# ninja (ROBOT_ID=2) has no camera, so leaving it on just wastes ~5s of boot
+# and CPU (it crash-loops on the missing /dev/video0, competing with the other
+# tools' Python cold start).
+ROBOT_SERVICES = "cogip@server.service cogip@planner.service cogip@copilot.service cogip@detector.service cogip@mcu-logger.service"
+ROBOT_SERVICES:append = "${@'' if d.getVar('ROBOT_ID') == '2' else ' cogip@robotcam.service'}"
+
 SYSTEMD_SERVICE:${PN} = " \
     cogip.target \
     cogip@dashboard.service \
-    ${@'cogip@server-beacon.service cogip@beaconcam.service' if d.getVar('ROBOT_ID') == '0' else 'cogip@server.service cogip@planner.service cogip@copilot.service cogip@detector.service cogip@mcu-logger.service cogip@robotcam.service'} \
+    ${@'cogip@server-beacon.service cogip@beaconcam.service' if d.getVar('ROBOT_ID') == '0' else d.getVar('ROBOT_SERVICES')} \
 "
 SYSTEMD_AUTO_ENABLE = "enable"
 
