@@ -27,9 +27,13 @@ IMAGE_FEATURES += " \
 # backend (see cogip-kiosk-browser / the wpewebkit bbappend): WPE talks
 # straight to the vc4-kms DRM node, no compositor. cog itself is NOT
 # installed -- its wpebackend-fdo DRM path SEGVs against WPE 2.52.
+# No kernel-modules: the mainline kernel (meta-cogip-bsp linux-stable) is
+# monolithic, everything =y. No linux-firmware-rpidistro-bcm43455: the BCM43455
+# wifi firmware is embedded in the kernel image (CONFIG_EXTRA_FIRMWARE). The
+# raspberrypi machine RRECOMMENDS that firmware, so drop it explicitly to avoid
+# a redundant on-disk copy.
+BAD_RECOMMENDATIONS += "linux-firmware-rpidistro-bcm43455"
 IMAGE_INSTALL += " \
-    kernel-modules \
-    linux-firmware-rpidistro-bcm43455 \
     wireless-regdb-static \
     rfkill \
     wpewebkit \
