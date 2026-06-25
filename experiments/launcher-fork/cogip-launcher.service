@@ -1,0 +1,19 @@
+[Unit]
+Description=Cogip launcher: server+dashboard+detector+planner+copilot from one fork parent
+# Phase-5 launcher: imports the heavy Python base once and os.fork()s one child
+# per tool (server first). Replaces the individual cogip@{server,dashboard,
+# planner,detector,copilot} services. Self-contained (server is a child) -> no
+# BindsTo on cogip@server.
+After=sysinit.target
+PartOf=cogip.target
+
+[Service]
+Type=simple
+Environment=VIRTUAL_ENV=/opt/.venv
+EnvironmentFile=/etc/cogip/environment
+ExecStart=/opt/.venv/bin/python /opt/cogip-launcher.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=cogip.target
