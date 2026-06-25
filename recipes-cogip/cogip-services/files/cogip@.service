@@ -1,16 +1,28 @@
 [Unit]
 Description=Cogip tool %i (native)
-# Native: the tool runs directly on the system Python 3.14 (cogip-tools +
-# its deps installed in site-packages), no Docker. The instance name is the
-# tool name, matching the cogip-%i console script (e.g. cogip@planner ->
-# /usr/bin/cogip-planner). Per-role config from cogip-environment.
-After=network.target
+# Native: the tool runs on Python 3.14 (cogip-tools + its deps installed in the
+# system site-packages), no Docker. It is launched with `uv run` against the
+# /opt/.venv experimentation venv (--system-site-packages): the venv inherits
+# every system package and adds whatever was `uv pip install`-ed on the board,
+# so a tried-out dependency is picked up here without rebuilding the image.
+# VIRTUAL_ENV makes uv use that venv as the active environment; --no-project
+# stops it looking for / creating a project venv. The instance name is the
+# tool name, matching the venv console script (e.g. cogip@planner ->
+# `uv run cogip-planner`). Per-role config from cogip-environment.
+#
+# Start as early as possible: the heavy bit is each tool's Python cold start,
+# so kick it off the moment its real prerequisites are ready -- sysinit.target
+# (ldconfig for the .so loads, tmpfiles for /run/cogip, rootfs mounted) -- not
+# after the network. The tools talk over localhost + CAN; can0 is opened only
+# after the (~10s) cold start, well after networkd brings it up, so no race.
+After=sysinit.target
 PartOf=cogip.target
 
 [Service]
 Type=simple
+Environment=VIRTUAL_ENV=/opt/.venv
 EnvironmentFile=/etc/cogip/environment
-ExecStart=/usr/bin/cogip-%i
+ExecStart=/usr/bin/uv run --no-project cogip-%i
 Restart=on-failure
 RestartSec=5
 

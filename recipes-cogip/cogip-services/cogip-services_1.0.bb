@@ -1,8 +1,8 @@
 SUMMARY = "Cogip application services (native, systemd-managed)"
 DESCRIPTION = "Ships a templated cogip@.service that runs each tool natively \
-on the system Python 3.14 (the cogip-%i console script), so systemd owns \
-restart/retry/ordering. No Docker. The set of enabled tools is selected by \
-the ROBOT_ID build variable (0 = beacon, 1-5 = robot)."
+with `uv run` against the /opt/.venv venv (the cogip-%i console script), so \
+systemd owns restart/retry/ordering. No Docker. The set of enabled tools is \
+selected by the ROBOT_ID build variable (0 = beacon, 1-5 = robot)."
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
