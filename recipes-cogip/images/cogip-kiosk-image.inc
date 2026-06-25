@@ -79,6 +79,9 @@ COGIP_APP ??= "1"
 # boot but the kiosk needs none of them (addressed by IP, no modem, no NFS).
 # They cost ~1.5s of boot and pull the network. Mask the services AND their
 # socket units (socket-activated, else the socket re-pulls the service).
+# alsa-restore/alsa-state restore the mixer state; the kiosk has no audio use
+# (the vc4 HDMI sound card stays only because DRM_VC4 depends on SND), so mask
+# them -- they just emit alsa-lib ucm errors at boot.
 systemd_handle_machine_id:append() {
     install -d ${IMAGE_ROOTFS}${sysconfdir}/systemd/system
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/getty@tty1.service
@@ -89,6 +92,8 @@ systemd_handle_machine_id:append() {
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/ofono.service
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/rpcbind.service
     ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/rpcbind.socket
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/alsa-restore.service
+    ln -sf /dev/null ${IMAGE_ROOTFS}${sysconfdir}/systemd/system/alsa-state.service
 }
 
 # Strip development tooling: image is reflashed, not patched on-target.
